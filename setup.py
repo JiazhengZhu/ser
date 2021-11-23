@@ -21,7 +21,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=requirements,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
     entry_points={
         "console_scripts": [
             "ser = bin.cli:main"

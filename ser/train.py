@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-def begin_training(model, training_dataloader, validation_dataloader, epochs, optimizer, device):
+def begin_training(model, training_dataloader, validation_dataloader, epochs, optimizer, device, logger):
     for epoch in range(epochs):
         for i, (images, labels) in enumerate(training_dataloader):
             images, labels = images.to(device), labels.to(device)
@@ -10,7 +10,7 @@ def begin_training(model, training_dataloader, validation_dataloader, epochs, op
             loss = F.nll_loss(output, labels)
             loss.backward()
             optimizer.step()
-            print(
+            logger.info(
                 f"Train Epoch: {epoch} | Batch: {i}/{len(training_dataloader)} "
                 f"| Loss: {loss.item():.4f}"
             )
@@ -28,6 +28,6 @@ def begin_training(model, training_dataloader, validation_dataloader, epochs, op
                 val_loss /= len(validation_dataloader.dataset)
                 val_acc = correct / len(validation_dataloader.dataset)
 
-                print(
+                logger.info(
                     f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}"
                 )

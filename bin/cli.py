@@ -8,12 +8,14 @@ from ser.data import get_training_dataloader, get_validation_dataloader
 from ser.train import begin_training
 
 import typer
+import logging
+from datetime import datetime
+
 
 main = typer.Typer()
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-
 
 @main.command()
 def train(
@@ -31,12 +33,21 @@ def train(
     )
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Running experiment {name} on {device} device...")
-    print(f"Config: epochs = {epochs}, batch_size = {batch_size}, learning rate = {learning_rate}. ")
-    # epochs = 2
-    # batch_size = 1000
-    # learning_rate = 0.01
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    fh = logging.FileHandler(f'./logs/{name}-{datetime.now()}.log')
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
 
+    logger.info(f"Running experiment {name} on {device} device...")
+    logger.info(f"Config: epochs = {epochs}, batch_size = {batch_size}, learning rate = {learning_rate}. ")
     # save the parameters!
 
     # load model
@@ -53,9 +64,7 @@ def train(
     validation_dataloader = get_validation_dataloader(ts, batch_size)
 
     # train
-    begin_training(model, training_dataloader, validation_dataloader, epochs, optimizer, device)
-
-
+    begin_training(model, training_dataloader, validation_dataloader, epochs, optimizer, device, logger)
 
 @main.command()
 def infer():
