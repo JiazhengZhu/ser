@@ -8,8 +8,11 @@ from ser.data import get_training_dataloader, get_validation_dataloader
 from ser.train import begin_training
 
 import typer
+
+import json
 import logging
 from datetime import datetime
+from git import Repo
 
 
 main = typer.Typer()
@@ -65,7 +68,19 @@ def train(
 
     # train
     begin_training(model, training_dataloader, validation_dataloader, epochs, optimizer, device, logger)
-
+    Path(f"run/{name}").mkdir(parents=True, exist_ok=True)
+    completion_time = datetime.now()
+    repo = Repo(search_parent_directories=True)
+    sha = repo.head.commit.hexsha
+    params_dict = {
+        'epochs': epochs,
+        'batch_size': batch_size,
+        'learning_rate': learning_rate,
+        'commit_sha': sha,
+    }
+    with open(f'./run/{name}/{completion_time}.json', 'w') as f:
+        json.dump(params_dict, f)
+    torch.save(model, f'run/{name}/{completion_time}')
 @main.command()
 def infer():
     print("This is where the inference code will go")
