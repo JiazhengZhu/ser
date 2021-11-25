@@ -9,6 +9,7 @@ class Params:
     batch_size: int
     learning_rate: float
     commit: str
+    trans: list
 
 
 PARAMS_FILE = "params.json"

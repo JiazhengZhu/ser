@@ -1,6 +1,6 @@
 from datetime import datetime
 from pathlib import Path
-
+from typing import List, Optional
 import typer
 import torch
 import git
@@ -10,7 +10,7 @@ from ser.constants import RESULTS_DIR
 from ser.data import train_dataloader, val_dataloader, test_dataloader
 from ser.infer import infer as run_infer
 from ser.params import Params, save_params, load_params
-from ser.transforms import transforms, normalize, flip
+from ser.transforms import transforms_by_option
 
 main = typer.Typer()
 
@@ -29,13 +29,16 @@ def train(
     learning_rate: float = typer.Option(
         0.01, "-l", "--learning-rate", help="Learning rate for the model."
     ),
+    trans: Optional[List[str]] = typer.Option(
+        None, '-tr', '--apply-transform', help='Apply transforms to images before training.'
+    ),
 ):
     """Run the training algorithm."""
     repo = git.Repo(search_parent_directories=True)
     sha = repo.head.object.hexsha
 
     # wraps the passed in parameters
-    params = Params(name, epochs, batch_size, learning_rate, sha)
+    params = Params(name, epochs, batch_size, learning_rate, sha, trans)
 
     # setup device to run on
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -53,8 +56,8 @@ def train(
     run_train(
         run_path,
         params,
-        train_dataloader(params.batch_size, transforms(normalize)),
-        val_dataloader(params.batch_size, transforms(normalize)),
+        train_dataloader(params.batch_size, transforms_by_option(trans)),
+        val_dataloader(params.batch_size, transforms_by_option(trans)),
         device,
     )
 
@@ -67,20 +70,19 @@ def infer(
     label: int = typer.Option(
         6, "-l", "--label", help="Label of image to show to the model"
     ),
+    trans: Optional[List[str]] = typer.Option(
+        None, '-tr', '--apply-transform', help='Apply transforms to images before testing.'
+    ),
 ):
     """Run the inference code"""
     params = load_params(run_path)
     model = torch.load(run_path / "model.pt")
-    image = _select_test_image(label)
+    image = _select_test_image(label, trans)
     run_infer(params, model, image, label)
 
 
-def _select_test_image(label):
-    # TODO we should be able to switch between these abstractions without
-    #   having to change any code.
-    #   make it happen!
-    ts = [normalize, flip]
-    dataloader = test_dataloader(1, transforms(*ts))
+def _select_test_image(label, trans):
+    dataloader = test_dataloader(1, transforms_by_option(trans))
     images, labels = next(iter(dataloader))
     while labels[0].item() != label:
         images, labels = next(iter(dataloader))
